@@ -1,22 +1,25 @@
-# Regenerates _workspace/ACTIVE.md and _workspace/FEATURES.md from per-doc frontmatter
-# across KA/notes. Source of truth = each doc's YAML frontmatter.
+# Regenerates _workspace/ACTIVE.md and _workspace/FEATURES.md from per-note frontmatter.
+# Source of truth = each note's YAML frontmatter. The script finds its own root via
+# $PSScriptRoot, so it needs no per-clone edit; it runs on Windows PowerShell and, via
+# pwsh, on macOS/Linux.
 #
 # Two independent axes:
 #   status:  -> ACTIVE.md  (active-work tracker; one row per effort)
 #     done/archived/complete/completed -> dropped (terminal)
 #     a "resolved" status (see $resolvedStatuses) -> "Resolved" section
 #     any other non-empty status        -> "Active work" section
-#   feature: -> FEATURES.md (all docs of a feature, grouped by slug; navigation)
+#   feature: -> FEATURES.md (all notes of a feature, grouped by slug; navigation)
 #
-# A doc may carry either key, both, or neither. Terminal status drops a doc from
-# BOTH indexes. A doc with feature: but no status: appears only in FEATURES.md.
-# Safe to run anywhere: no-ops if the notes repo isn't present. No timestamp in
-# output, so an index changes only when the underlying frontmatter changes.
+# A note may carry either key, both, or neither. Terminal status drops a note from
+# BOTH indexes. A note with feature: but no status: appears only in FEATURES.md.
+# No timestamp in output, so an index changes only when the underlying frontmatter changes.
 $ErrorActionPreference = 'Stop'
-$root = 'D:\senften\work\KA\notes'
-if (-not (Test-Path -LiteralPath $root)) { exit 0 }
-$outActive   = Join-Path $root '_workspace\ACTIVE.md'
-$outFeatures = Join-Path $root '_workspace\FEATURES.md'
+$root = $PSScriptRoot
+if (-not $root -or -not (Test-Path -LiteralPath $root)) { exit 0 }
+$wsDir = Join-Path $root '_workspace'
+if (-not (Test-Path -LiteralPath $wsDir)) { New-Item -ItemType Directory -Path $wsDir | Out-Null }
+$outActive   = Join-Path $wsDir 'ACTIVE.md'
+$outFeatures = Join-Path $wsDir 'FEATURES.md'
 
 # "Resolved but not deletable": code-complete + merged, awaiting verification.
 $resolvedStatuses = @('verifying','merged-pending-verification','pending-verification')
@@ -60,7 +63,7 @@ Get-ChildItem -LiteralPath $root -Recurse -Filter *.md -File |
     $rel = ($_.FullName.Substring($root.Length + 1)) -replace '\\','/'
     $items += [pscustomobject]@{
       Title     = (& $get 'title' $_.BaseName)
-      Solutions = ((& $get 'solutions' '').Trim('[',']'))
+      Areas     = ((& $get 'areas' '').Trim('[',']'))
       Status    = $status
       Feature   = ((& $get 'feature' '').Trim('[',']'))
       Updated   = (& $get 'updated' '')
@@ -88,7 +91,7 @@ $emit = {
   } else {
     foreach ($it in $rows) {
       $head = @("**$($it.Title)**")
-      if ($it.Solutions) { $head += $it.Solutions }
+      if ($it.Areas) { $head += $it.Areas }
       $head += "status: $($it.Status)"
       if ($it.Updated) { $head += "updated: $($it.Updated)" }
       $sb.Add('- ' + ($head -join ' · '))
@@ -124,11 +127,11 @@ if ($featItems.Count -eq 0) {
   $orderedSlugs = @($groups.Keys | Sort-Object @{Expression={ @($groups[$_].Updated | Sort-Object -Descending)[0] }; Descending=$true}, @{Expression={$_}})
   foreach ($slug in $orderedSlugs) {
     $members = @($groups[$slug] | Sort-Object @{Expression='Updated';Descending=$true}, Title)
-    $sols = @($members.Solutions | Where-Object { $_ } |
-              ForEach-Object { $_ -split ',' } | ForEach-Object { $_.Trim() } |
-              Where-Object { $_ } | Select-Object -Unique)
+    $areas = @($members.Areas | Where-Object { $_ } |
+               ForEach-Object { $_ -split ',' } | ForEach-Object { $_.Trim() } |
+               Where-Object { $_ } | Select-Object -Unique)
     $headParts = @("## $slug")
-    if ($sols.Count) { $headParts += ($sols -join ', ') }
+    if ($areas.Count) { $headParts += ($areas -join ', ') }
     $fsb.Add($headParts -join ' · ')
     foreach ($it in $members) {
       $seg = @(& $mdLink $it.Rel)
