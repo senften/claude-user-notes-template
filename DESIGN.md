@@ -1,9 +1,9 @@
 # Notes system — design
 
-This repo is a small system for **git-tracked, generator-indexed working notes**, reusable as a
-template across projects (see "Reusing this structure" in [`README.md`](README.md)). This
-document is the durable record of *why* it's built the way it is — kept as part of the skeleton
-so the rationale survives cloning after the per-effort notes are stripped.
+This repo is a small system for **git-tracked, generator-indexed working notes**, shipped as a
+**template** (`claude-user-notes-template`) that seeds a notes repo per project (see
+[`README.md`](README.md)). This document is the durable record of *why* it's built the way it
+is — part of the skeleton so the rationale survives cloning.
 
 ## What it is
 
@@ -49,15 +49,34 @@ so importing it too would only add redundant context cost.
 
 ### Resolved-pending-verification lifecycle stage
 Merged-but-unverified work is neither "active" (nothing left to do) nor safe to delete
-(support-team feedback can reopen it). A small set of "resolved" statuses routes it to its own
+(downstream QA/verification feedback can reopen it). A small set of "resolved" statuses routes it to its own
 `ACTIVE.md` section, so it's parked visibly rather than cluttering active work or being pruned
 early. The lifecycle is: active → resolved/pending-verification → deleted (after sign-off).
 
 ### Robust-enough frontmatter parsing
 The parser is line-based (not a full YAML parser) but handles scalars, inline arrays
 (`key: [a, b]`), and multi-line block lists. That last case matters because Obsidian's Properties
-editor rewrites inline arrays into block lists; without it, a `solutions:`/`feature:` value would
+editor rewrites inline arrays into block lists; without it, an `areas:`/`feature:` value would
 silently blank on the next regen.
+
+### Two repos, not one repo with two branches
+The template and each project are separate repositories; notes flow one way (template →
+project, via `upstream`). A single repo with `main`=template and a project branch gives the
+same update channel but distinguishes template from notes only by the current branch — easy to
+commit a note onto the template branch by mistake. Separate repos make "which am I in" a
+visible directory instead of an invisible branch, and git physically prevents a project's notes
+from entering the template's history.
+
+### Copy the skeleton into a fresh repo; never clone to create the template
+`git clone` copies full history, so deleting notes afterward leaves them in history forever.
+The template is instead created by copying only skeleton *working files* into a new `git init`,
+so it never contained a note — clean by construction.
+
+### One generator (PowerShell), run via `pwsh` off-Windows
+The generator is a single PowerShell script. On macOS/Linux it runs via `pwsh` (one install)
+rather than a second bash/Python port. Two implementations of the frontmatter parser (block
+lists, two-axis routing, date sort) would drift; one source of truth avoids that. The root is
+`$PSScriptRoot` so no clone needs editing.
 
 ## Rejected alternatives (for the record)
 
@@ -66,9 +85,17 @@ silently blank on the next regen.
   change. Rejected in favor of the flat generated hub.
 - **Obsidian + `#feature/…` tags.** Native graph/backlinks, but adds a tool dependency whose main
   benefit the generator already covers. Left as an optional layer, not a requirement.
+- **Single repo, `main`=template / project=branch.** Same merge-based update channel as two
+  repos, but template and notes share one working tree distinguished only by branch — easy to
+  mis-commit. Rejected for the two-repo model.
+- **Scaffold / paste-into-Claude script.** Trivial to instantiate but gives no git update
+  channel; skeleton fixes to existing projects would be manual. Rejected.
+- **All-Python generator.** One portable implementation, but a runtime whose install/versioning
+  is historically painful on Windows. Rejected in favor of reusing the tested PowerShell script.
+- **Two native scripts (pwsh + bash/POSIX-sh).** No runtime install off-Windows, but two
+  implementations that must stay byte-for-byte in sync. Rejected for the drift cost.
 
 ## History
 
-The dated design/plan that introduced the `feature:` axis lived in
-`_workspace/2026-07-10-notes-feature-membership-{design,plan}.md`. This document is the distilled,
-durable successor; those dated docs have since been pruned — git history is their record.
+Distilled from the original KAutomate-specific implementation this template was extracted from;
+that project's dated design/plan notes live in its own git history.
