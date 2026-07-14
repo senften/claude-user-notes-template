@@ -1,2 +1,5 @@
 # Obsidian vault config (personal UI state)
 .obsidian/
+
+# macOS Finder metadata
+.DS_Store
