@@ -72,28 +72,67 @@ Edit **in the template repo**, or backport a skeleton change discovered in a pro
 
 ## Per-machine wiring (not part of the template)
 
+**The notes clone is decoupled from your project — nothing records where the notes sit
+relative to the project repo.** Drop the clone wherever suits you (a sibling of the project,
+one level up, inside it, anywhere). Only three things connect the two, and just one of them
+is position-sensitive:
+
+- the **generator** self-roots via `$PSScriptRoot` — it knows only its own folder, nothing
+  about any project;
+- the **Stop hook** references the generator by *absolute* path — position-independent;
+- the **`CLAUDE.local.md` stub** carries a *relative* `@import` — this is the **single** place
+  the notes-vs-project relationship is expressed. You author it to match your layout.
+
 ### 1. `CLAUDE.local.md` stub (in the *consuming* project)
 
-`CLAUDE.local.md` auto-loads from cwd + ancestors and its `@import` may point outside the
-repo. In the project that should see the notes, add a stub pointing at this clone:
+`CLAUDE.local.md` auto-loads from the directory you launch Claude Code in, plus its ancestors,
+and its `@import` may point outside the repo. Put the stub at (or above) your launch directory
+with an `@import` pointing at the clone:
 
 ```
 @../myproject-notes/_workspace/claude-instructions.md
 ```
 
-Keep it out of that project's git without touching its shared `.gitignore`:
+The `@import` path is **relative to the stub's own location** — count the hops from the stub
+up to wherever the clone lives. For example, launching from `proj/src/` with the clone as a
+sibling of `proj/`:
+
+```
+work/
+├── proj/
+│   └── src/         <- launch dir; put CLAUDE.local.md here
+└── my-notes/        <- the clone (sibling of proj/)
+```
+
+the stub reads `@../../my-notes/_workspace/claude-instructions.md` (up from `src` to `proj`,
+up again to `work`, then into the clone). If the clone instead sat one level up at `proj/`,
+it would be `@../my-notes/_workspace/claude-instructions.md`.
+
+Keep the stub out of that project's git without touching its shared `.gitignore`:
 
 ```
 # append to <consuming-project>/.git/info/exclude
 CLAUDE.local.md
 ```
 
-(If the notes are a committed folder *inside* the project instead, skip the stub and add
+(If the clone lands *inside* the project's tree, add its folder name to that same
+`.git/info/exclude` too, so the host project doesn't track it. Or, if you prefer the notes as
+a committed folder inside the project, skip the stub entirely and add
 `@_workspace/claude-instructions.md` to the project's `CLAUDE.md`.)
 
 ### 2. The `Stop` hook
 
-Add to `.claude/settings.local.json` (project-scoped) or `~/.claude/settings.json` (global).
+Prefer a **project-scoped** hook: put it in your launch directory's
+`.claude/settings.local.json`, pointing (by absolute path) at *this project's* clone. It then
+fires only in this project's sessions.
+
+Avoid the **global** `~/.claude/settings.json` for this. That file is per-user-account, so a
+hook there fires on *every* Stop in *every* project you open, and a single global hook can
+only target one clone. With several projects you'd stack multiple global hooks all firing
+every session (each harmlessly regenerating its own notes, but wasteful and noisy).
+Project-scoped hooks keep each project's regeneration local to that project and scale cleanly
+as you add more.
+
 The hook config is per-machine — switch the command to match the OS:
 
 ```json
