@@ -95,6 +95,41 @@ lists, two-axis routing, date sort) would drift; one source of truth avoids that
 - **Two native scripts (pwsh + bash/POSIX-sh).** No runtime install off-Windows, but two
   implementations that must stay byte-for-byte in sync. Rejected for the drift cost.
 
+## Future work
+
+### Durable knowledge docs (architecture / design / data-flow / workflow)
+
+A planned second class of document, distinct from today's checkpoint/status notes. Today's
+notes are **transient**: born → tracked in `ACTIVE.md` → pruned when the work is done.
+Durable knowledge docs would be the opposite — the "how this system actually works and why"
+record, **maintained forever, never pruned**, for lasting human *and* agent reference. The
+two must not be conflated: tooling built for transient work (a tracker with a prune step) is
+actively wrong for evergreen knowledge, whose failure mode is *staleness*, not clutter.
+
+Open design questions for a future effort:
+
+- **Which axis?** A third generated index (e.g. `KNOWLEDGE.md`), an extension of `feature:`
+  grouping, or a new `kind:`/`type:` frontmatter dimension? How does it relate to the existing
+  `status:` and `feature:` axes?
+- **Anti-pruning.** Today's guidance deletes `done` notes and the generator drops terminal
+  `status:` from all indexes. Durable docs must be *exempt* — they need a marker that keeps
+  them out of both the prune rule and terminal-status dropping.
+- **Agent context.** `ACTIVE.md` is imported into sessions; `FEATURES.md` is not. Durable
+  knowledge is prime agent-reference material — should some/all of it be imported, or exposed
+  via a curated index rather than full bodies (token-cost tradeoff)? This is the one real
+  behavioral departure from today's system.
+- **Derive vs. hand-write.** Mechanical facts (dependency maps, "what calls what") can be
+  *generated* from code so they never go stale; reserve prose for the "why", the contracts,
+  and rejected alternatives that no tool can derive.
+- **Authoring & freshness.** A convention/skill prompting the agent to draft or update a doc
+  when a subsystem is designed or a non-obvious fact is discovered — with a human-ratify gate
+  (agent proposes → human reviews → merge), and drift *detection* (flagging doc claims the
+  code contradicts) valued over autonomous authoring.
+- **Placement & identity.** `_workspace/` vs `<area>/`; relationship to `feature:` slugs; a
+  naming convention that signals "durable, not a checkpoint".
+
+Build it in this template repo so it flows to every instance via the `upstream` merge channel.
+
 ## History
 
 Distilled from the original KAutomate-specific implementation this template was extracted from;
