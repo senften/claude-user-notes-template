@@ -120,6 +120,13 @@ CLAUDE.local.md
 a committed folder inside the project, skip the stub entirely and add
 `@_workspace/claude-instructions.md` to the project's `CLAUDE.md`.)
 
+**Project-specific conventions (optional overlay).** The base `claude-instructions.md` ends
+with an optional `@claude-instructions.local.md` import. Drop a
+`_workspace/claude-instructions.local.md` in your clone with anything specific to this project
+(paths, remotes, vocabulary) — it loads right before `ACTIVE.md`; omit it and the import is
+silently skipped (a missing `@import` doesn't error). Keep it *additive*: never edit the
+generic file locally, so `git merge upstream/main` stays conflict-free.
+
 ### 2. The `Stop` hook
 
 Prefer a **project-scoped** hook: put it in your launch directory's

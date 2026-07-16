@@ -78,6 +78,14 @@ rather than a second bash/Python port. Two implementations of the frontmatter pa
 lists, two-axis routing, date sort) would drift; one source of truth avoids that. The root is
 `$PSScriptRoot` so no clone needs editing.
 
+### Project-specifics layer on the generic instructions, never fork them
+`claude-instructions.md` is skeleton — a project must not edit it to add its own paths,
+remotes, or vocabulary, or every `merge upstream/main` conflicts. Instead the base file ends
+with an optional `@claude-instructions.local.md` import: a project drops that file in with its
+specifics and it loads right before `@ACTIVE.md`; a bare template instance omits it and the
+import is silently skipped (verified: a missing `@import` doesn't error and later imports still
+load). Generic stays mergeable; local stays conflict-free.
+
 ## Rejected alternatives (for the record)
 
 - **Inline "related docs" links in each doc.** True one-click sibling navigation, but the

@@ -36,4 +36,8 @@ keep the source honest by setting frontmatter on each note.
   one-line breadcrumb in the origin area.
 - Delete a note once its commit merges — git history is the durable record.
 
+<!-- Optional per-project overlay, silently skipped when absent: put project-specific
+     conventions (paths, remotes, vocabulary) in `claude-instructions.local.md`. -->
+@claude-instructions.local.md
+
 @ACTIVE.md
