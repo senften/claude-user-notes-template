@@ -1,0 +1,268 @@
+# ACTIVE.md Status Categories Implementation Plan
+
+> **For agentic workers:** REQUIRED SUB-SKILL: Use superpowers:subagent-driven-development (recommended) or superpowers:executing-plans to implement this plan task-by-task. Steps use checkbox (`- [ ]`) syntax for tracking.
+
+**Goal:** Expand `ACTIVE.md` from two lifecycle sections to seven, routing each note's `status:` to a precise section via an ordered section-definition list in the generator.
+
+**Architecture:** Replace the two hardcoded buckets in `regen-active.ps1` with one ordered `$sections` array of `{Heading, Keywords}`. "Active work" is the catch-all (`Keywords = $null`). Emit only non-empty sections. `FEATURES.md` and the `feature:` axis are untouched. Then update the two docs (`claude-instructions.md`, `DESIGN.md`) to match.
+
+**Tech Stack:** PowerShell (`regen-active.ps1`, run via `pwsh`). No automated test framework — verification is a manual scratch-fixture run of the generator.
+
+## Global Constraints
+
+- Terminal statuses (`done`, `archived`, `complete`, `completed`) still drop a note from **both** indexes — unchanged, handled before routing.
+- Status matching is **exact against the lowercased `status:` value** (`.ToLower()` already applied), not substring.
+- `ACTIVE.md` is imported into every Claude session — keep output lean (no empty-section noise).
+- Do **not** modify the FEATURES.md build block or the frontmatter parser.
+- `Set-Content ... -Encoding utf8` and `-join "\`n"` (LF) output are preserved as-is.
+- Fixture notes created for testing must never be committed.
+
+---
+
+### Task 1: Refactor the generator to seven ordered sections
+
+**Files:**
+- Modify: `regen-active.ps1` (header comment block lines 1-15; `$resolvedStatuses` line 25; item `Resolved` property line 72; the entire `# ---- ACTIVE.md ----` block, lines 81-107)
+
+**Interfaces:**
+- Consumes: the existing `$items` array (each item has `Title`, `Areas`, `Status` (lowercased), `Feature`, `Updated`, `Resume`, `Rel`) and the `$mdLink` closure defined at line 79.
+- Produces: `_workspace/ACTIVE.md` with sections in this exact top-to-bottom order — **Active work**, **In Review — PR**, **Blocked**, **Resolved — pending verification**, **Watching**, **On Hiatus**, **Future** — each emitted only if it has ≥1 row.
+
+- [ ] **Step 1: Update the header comment block** to describe the multi-section model.
+
+Replace lines 6-15 (the `# Two independent axes:` comment through the `# No timestamp...` line) with:
+
+```powershell
+# Two independent axes:
+#   status:  -> ACTIVE.md  (active-work tracker; one row per effort)
+#     done/archived/complete/completed -> dropped (terminal)
+#     otherwise routed to one of the ordered $sections buckets (see below);
+#     any non-terminal status not matched by a bucket falls to "Active work".
+#   feature: -> FEATURES.md (all notes of a feature, grouped by slug; navigation)
+#
+# A note may carry either key, both, or neither. Terminal status drops a note from
+# BOTH indexes. A note with feature: but no status: appears only in FEATURES.md.
+# Only non-empty ACTIVE.md sections are emitted. No timestamp in output, so an index
+# changes only when the underlying frontmatter changes.
+```
+
+- [ ] **Step 2: Remove the `$resolvedStatuses` line.** Delete line 25:
+
+```powershell
+# "Resolved but not deletable": code-complete + merged, awaiting verification.
+$resolvedStatuses = @('verifying','merged-pending-verification','pending-verification')
+```
+
+Leave `$terminalStatuses` (line 26) untouched.
+
+- [ ] **Step 3: Remove the `Resolved` property** from the item object. In the `$items += [pscustomobject]@{ ... }` block, delete this line:
+
+```powershell
+      Resolved  = ($status -in $resolvedStatuses)
+```
+
+- [ ] **Step 4: Replace the entire ACTIVE.md build block.** Replace lines 81-107 (from `# ---- ACTIVE.md ----` through the `Set-Content -LiteralPath $outActive ...` line) with:
+
+```powershell
+# ---- ACTIVE.md ----
+# Ordered section definitions: display order top (most active) to bottom.
+# The single entry with Keywords = $null is the catch-all (Active work) and must
+# appear exactly once. Keyword sets are mutually exclusive; matched exact, lowercased.
+$sections = @(
+  @{ Heading = '# Active work';                     Keywords = $null }
+  @{ Heading = '# In Review — PR';                  Keywords = @('in-review','review','pr') }
+  @{ Heading = '# Blocked';                         Keywords = @('blocked','waiting') }
+  @{ Heading = '# Resolved — pending verification'; Keywords = @('verifying','merged-pending-verification','pending-verification') }
+  @{ Heading = '# Watching';                        Keywords = @('watching','watch') }
+  @{ Heading = '# On Hiatus';                       Keywords = @('hiatus','paused','shelved') }
+  @{ Heading = '# Future';                          Keywords = @('future','planned') }
+)
+$claimed = @($sections | Where-Object { $_.Keywords } | ForEach-Object { $_.Keywords })
+
+$sb = [System.Collections.Generic.List[string]]::new()
+$sb.Add('<!-- GENERATED by regen-active.ps1 from per-note frontmatter. Do not edit by hand. -->')
+
+# Two lines of markdown for one item row.
+$rowFor = {
+  param($it)
+  $head = @("**$($it.Title)**")
+  if ($it.Areas) { $head += $it.Areas }
+  $head += "status: $($it.Status)"
+  if ($it.Updated) { $head += "updated: $($it.Updated)" }
+  @('- ' + ($head -join ' · '), "  doc: $(& $mdLink $it.Rel) · resume: ``$($it.Resume)``")
+}
+
+$activeItems = @($items | Where-Object { $_.Status })
+$any = $false
+foreach ($sec in $sections) {
+  if ($null -eq $sec.Keywords) {
+    $rows = @($activeItems | Where-Object { $_.Status -notin $claimed })
+  } else {
+    $rows = @($activeItems | Where-Object { $_.Status -in $sec.Keywords })
+  }
+  if ($rows.Count -eq 0) { continue }
+  if ($any) { $sb.Add('') }
+  $sb.Add($sec.Heading)
+  $sb.Add('')
+  foreach ($it in $rows) { foreach ($ln in (& $rowFor $it)) { $sb.Add($ln) } }
+  $any = $true
+}
+if (-not $any) { $sb.Add('# Active work'); $sb.Add(''); $sb.Add('_(none)_') }
+Set-Content -LiteralPath $outActive -Value ($sb -join "`n") -Encoding utf8
+```
+
+- [ ] **Step 5: Create scratch fixture notes** to exercise every section. Run from the repo root:
+
+```powershell
+$fx = Join-Path $PWD '_ztest'
+New-Item -ItemType Directory -Force $fx | Out-Null
+$cases = @(
+  @{ n='active';   s='in-progress' }
+  @{ n='review';   s='in-review' }
+  @{ n='blocked';  s='blocked' }
+  @{ n='verify';   s='pending-verification' }
+  @{ n='watch';    s='watching' }
+  @{ n='hiatus';   s='paused' }
+  @{ n='future';   s='future' }
+  @{ n='terminal'; s='done' }
+)
+foreach ($c in $cases) {
+  Set-Content -LiteralPath (Join-Path $fx "$($c.n).md") -Encoding utf8 -Value @"
+---
+title: fixture $($c.n)
+status: $($c.s)
+updated: 2026-07-20
+---
+body
+"@
+}
+```
+
+- [ ] **Step 6: Run the generator and inspect output.**
+
+Run: `pwsh -NoProfile -File ./regen-active.ps1; Get-Content ./_workspace/ACTIVE.md`
+
+Expected: headings appear in exactly this order and each has its fixture — `# Active work` (fixture active), `# In Review — PR` (review), `# Blocked` (blocked), `# Resolved — pending verification` (verify), `# Watching` (watch), `# On Hiatus` (hiatus), `# Future` (future). The `done` fixture appears **nowhere**. No `_(none)_` lines present.
+
+- [ ] **Step 7: Assert ordering and terminal-drop programmatically.**
+
+Run:
+
+```powershell
+$c = Get-Content ./_workspace/ACTIVE.md -Raw
+$order = @('# Active work','# In Review — PR','# Blocked','# Resolved — pending verification','# Watching','# On Hiatus','# Future')
+$idx = $order | ForEach-Object { $c.IndexOf($_) }
+"$([bool](($idx -join ' ') -eq (($idx | Sort-Object) -join ' ')))"   # ordering monotonic
+"$(-not $c.Contains('fixture terminal'))"                            # terminal dropped
+"$(-not $c.Contains('_(none)_'))"                                    # no empty sections
+```
+
+Expected: three lines, all `True`.
+
+- [ ] **Step 8: Verify the empty case.** Remove fixtures, re-run, inspect:
+
+```powershell
+Remove-Item -Recurse -Force ./_ztest
+pwsh -NoProfile -File ./regen-active.ps1
+Get-Content ./_workspace/ACTIVE.md
+```
+
+Expected exactly:
+
+```
+<!-- GENERATED by regen-active.ps1 from per-note frontmatter. Do not edit by hand. -->
+# Active work
+
+_(none)_
+```
+
+- [ ] **Step 9: Confirm no fixture files remain and FEATURES.md is unaffected.**
+
+Run: `git status --porcelain`
+
+Expected: no `_ztest/` entries; the only changes are `regen-active.ps1` and the regenerated `_workspace/ACTIVE.md` (FEATURES.md unchanged — its content did not depend on the fixtures once removed).
+
+- [ ] **Step 10: Commit.**
+
+```bash
+git add regen-active.ps1 _workspace/ACTIVE.md
+git commit -m "feat(generator): route status into seven ordered ACTIVE.md sections"
+```
+
+---
+
+### Task 2: Update the documentation to match
+
+**Files:**
+- Modify: `_workspace/claude-instructions.md` (the `## Two independent axes` status routing bullets, lines 21-25)
+- Modify: `DESIGN.md` (the `### Resolved-pending-verification lifecycle stage` decision, lines 50-54)
+
+**Interfaces:**
+- Consumes: the section set and keywords finalized in Task 1's `$sections`.
+- Produces: docs whose described routing matches the generator exactly.
+
+- [ ] **Step 1: Update `claude-instructions.md` routing bullets.** Replace lines 21-25 (the `**`status:` → `ACTIVE.md`**` bullet and its four sub-bullets) with:
+
+```markdown
+- **`status:` → `ACTIVE.md`** (one row per effort). Value is lowercased, matched exactly, and
+  routed to a section (sections shown only when non-empty):
+  - `done` / `archived` / `complete` / `completed` → dropped (terminal).
+  - `in-review` / `review` / `pr` → **In Review — PR** (code review).
+  - `blocked` / `waiting` → **Blocked** (stalled on an external gate).
+  - `verifying` / `merged-pending-verification` / `pending-verification` → **Resolved — pending verification** (QA).
+  - `watching` / `watch` → **Watching** (complete; possible follow-up).
+  - `hiatus` / `paused` / `shelved` → **On Hiatus** (paused, incomplete).
+  - `future` / `planned` → **Future** (considered, not started).
+  - any other non-empty value → **Active work** (catch-all).
+```
+
+- [ ] **Step 2: Update the `DESIGN.md` lifecycle decision.** Replace the `### Resolved-pending-verification lifecycle stage` heading and its paragraph (lines 50-54) with:
+
+```markdown
+### A multi-stage lifecycle, not just active/done
+`status:` routes a note to one of an ordered set of sections in `ACTIVE.md`, rendered
+most-active-first: **Active work** (catch-all) → **In Review — PR** (code review) →
+**Blocked** (external gate) → **Resolved — pending verification** (QA) → **Watching**
+(complete, possible follow-up) → **On Hiatus** (paused, incomplete) → **Future** (not
+started). Terminal statuses (`done`/etc.) still drop from both indexes. The stages are
+independent keyword-sets in one ordered `$sections` list in `regen-active.ps1`; adding or
+reordering a section is a one-line edit. The load-bearing distinctions: **Blocked** (can't
+proceed) vs **On Hiatus** (chose to pause); **Watching** (work done, watching for more) vs
+**On Hiatus** (work unfinished); and the two review gates — **In Review — PR** (code) before
+**Resolved — pending verification** (QA). Merged-but-unverified work stays parked in Resolved
+(neither active nor safe to delete) until sign-off; only non-empty sections render, so unused
+stages add no noise.
+```
+
+- [ ] **Step 3: Verify the docs render and reference no stale two-bucket language.**
+
+Run: `pwsh -NoProfile -Command "Select-String -Path DESIGN.md,_workspace/claude-instructions.md -Pattern 'resolved.{0,30}section','two-bucket' -AllMatches"`
+
+Expected: no matches referring to the old two-section model (a match inside the new multi-stage text that merely contains the word "Resolved" is fine — confirm by eye that no sentence claims there are only two sections).
+
+- [ ] **Step 4: Commit.**
+
+```bash
+git add _workspace/claude-instructions.md DESIGN.md
+git commit -m "docs: document seven-section ACTIVE.md lifecycle"
+```
+
+---
+
+## Self-Review
+
+**Spec coverage:**
+- Seven sections + order → Task 1 Step 4 (`$sections`), verified Step 7. ✓
+- Keyword-sets per section → Task 1 Step 4. ✓
+- Active work catch-all, exact-lowercased match → Task 1 Step 4 (`$claimed` / `-notin`). ✓
+- Terminal drop unchanged → Global Constraints + verified Task 1 Step 7. ✓
+- Ordered-list refactor → Task 1. ✓
+- Non-empty-only rendering + single `_(none)_` when empty → Task 1 Step 4, verified Step 8. ✓
+- `claude-instructions.md` update → Task 2 Step 1. ✓
+- `DESIGN.md` + script header update → Task 1 Step 1 (header), Task 2 Step 2 (DESIGN). ✓
+- FEATURES.md untouched → Global Constraints, verified Task 1 Step 9. ✓
+- Out of scope (durable docs) → not touched. ✓
+
+**Placeholder scan:** No TBD/TODO; all code and commands are literal. ✓
+
+**Type/name consistency:** Section headings identical between Task 1 `$sections`, Task 1 Step 7 `$order` assertion, `claude-instructions.md` (Task 2 Step 1), and `DESIGN.md` (Task 2 Step 2). `$mdLink` (line 79) and `$rowFor` referenced consistently. Removed `$resolvedStatuses` and `Resolved` property have no remaining references. ✓
