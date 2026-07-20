@@ -47,11 +47,19 @@ one of them changes.
 Claude sessions import `ACTIVE.md` only. The feature view is the same docs on a different axis,
 so importing it too would only add redundant context cost.
 
-### Resolved-pending-verification lifecycle stage
-Merged-but-unverified work is neither "active" (nothing left to do) nor safe to delete
-(downstream QA/verification feedback can reopen it). A small set of "resolved" statuses routes it to its own
-`ACTIVE.md` section, so it's parked visibly rather than cluttering active work or being pruned
-early. The lifecycle is: active → resolved/pending-verification → deleted (after sign-off).
+### A multi-stage lifecycle, not just active/done
+`status:` routes a note to one of an ordered set of sections in `ACTIVE.md`, rendered
+most-active-first: **Active work** (catch-all) → **In Review — PR** (code review) →
+**Blocked** (external gate) → **Resolved — pending verification** (QA) → **Watching**
+(complete, possible follow-up) → **On Hiatus** (paused, incomplete) → **Future** (not
+started). Terminal statuses (`done`/etc.) still drop from both indexes. The stages are
+independent keyword-sets in one ordered `$sections` list in `regen-active.ps1`; adding or
+reordering a section is a one-line edit. The load-bearing distinctions: **Blocked** (can't
+proceed) vs **On Hiatus** (chose to pause); **Watching** (work done, watching for more) vs
+**On Hiatus** (work unfinished); and the two review gates — **In Review — PR** (code) before
+**Resolved — pending verification** (QA). Merged-but-unverified work stays parked in Resolved
+(neither active nor safe to delete) until sign-off; only non-empty sections render, so unused
+stages add no noise.
 
 ### Robust-enough frontmatter parsing
 The parser is line-based (not a full YAML parser) but handles scalars, inline arrays

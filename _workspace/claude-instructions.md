@@ -18,11 +18,16 @@ keep the source honest by setting frontmatter on each note.
 
 ## Two independent axes
 
-- **`status:` → `ACTIVE.md`** (one row per effort). Routing (lowercased):
+- **`status:` → `ACTIVE.md`** (one row per effort). Value is lowercased, matched exactly, and
+  routed to a section (sections shown only when non-empty):
   - `done` / `archived` / `complete` / `completed` → dropped (terminal).
-  - a *resolved* status (`verifying`, `merged-pending-verification`, `pending-verification`)
-    → **Resolved — pending verification** section.
-  - any other non-empty value → **Active work** section.
+  - `in-review` / `review` / `pr` → **In Review — PR** (code review).
+  - `blocked` / `waiting` → **Blocked** (stalled on an external gate).
+  - `verifying` / `merged-pending-verification` / `pending-verification` → **Resolved — pending verification** (QA).
+  - `watching` / `watch` → **Watching** (complete; possible follow-up).
+  - `hiatus` / `paused` / `shelved` → **On Hiatus** (paused, incomplete).
+  - `future` / `planned` → **Future** (considered, not started).
+  - any other non-empty value → **Active work** (catch-all).
 - **`feature:` → `FEATURES.md`** (all notes of a feature, grouped by kebab-case slug).
   Put `feature:` on every member note; a companion design/plan note may carry `feature:`
   alone (no `status:`) so it aids navigation without adding a row to `ACTIVE.md`. A terminal
