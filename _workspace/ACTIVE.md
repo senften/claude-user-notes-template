@@ -2,7 +2,3 @@
 # Active work
 
 _(none)_
-
-# Resolved — pending verification
-
-_(none)_
