@@ -24,6 +24,19 @@ A doc may carry either or both. They render to separate files so two unrelated g
 fight for one layout. A terminal `status:` drops a doc from both indexes; a `feature:`-only
 companion doc (design/plan) appears in `FEATURES.md` without adding a row to `ACTIVE.md`.
 
+### A third axis for evergreen knowledge
+`status:` and `feature:` both describe *transient* work — terminal status drops a note from
+both indexes. Durable knowledge (architecture, data flow, landmines) has the opposite
+lifecycle: its failure mode is staleness, not clutter, so it must never be pruned. A third
+orthogonal axis carries it: `durable: true` (a boolean prune-exemption flag and identity
+signal) routes a note to a third generated index, `KNOWLEDGE.md`, grouped by a new `topic:`
+key. `durable:` is orthogonal to `status:` deliberately — a note that closes a feature often
+leaves one evergreen record *and* one transient watch item; keeping them on separate axes lets
+the watch resolve (`status: watching → done`, dropped from `ACTIVE.md`) while the knowledge
+persists in `KNOWLEDGE.md`. Like `FEATURES.md`, `KNOWLEDGE.md` is not imported into sessions
+(unbounded token growth is the failure mode of inlining evergreen knowledge); durable docs are
+reached by a link from the transient note being worked.
+
 ### Generate the index; don't hand-maintain it
 The recurring cost of a notes web is keeping index/hub pages current by hand. Here the
 frontmatter is authoritative and the generator rebuilds the indexes on every turn, so the hubs
@@ -99,6 +112,9 @@ load). Generic stays mergeable; local stays conflict-free.
 - **Inline "related docs" links in each doc.** True one-click sibling navigation, but the
   generator would write into authored files and produce git churn across every sibling on any
   change. Rejected in favor of the flat generated hub.
+- **Reserved `status:` value for durable notes.** Simpler than a new axis, but a closing feature
+  leaves both an evergreen record and a transient watch item in one note; a status value can be
+  only one of the two at a time. Rejected — durability must be orthogonal to status.
 - **Obsidian + `#feature/…` tags.** Native graph/backlinks, but adds a tool dependency whose main
   benefit the generator already covers. Left as an optional layer, not a requirement.
 - **Single repo, `main`=template / project=branch.** Same merge-based update channel as two
@@ -113,38 +129,19 @@ load). Generic stays mergeable; local stays conflict-free.
 
 ## Future work
 
-### Durable knowledge docs (architecture / design / data-flow / workflow)
+### Durable knowledge docs — remaining work
 
-A planned second class of document, distinct from today's checkpoint/status notes. Today's
-notes are **transient**: born → tracked in `ACTIVE.md` → pruned when the work is done.
-Durable knowledge docs would be the opposite — the "how this system actually works and why"
-record, **maintained forever, never pruned**, for lasting human *and* agent reference. The
-two must not be conflated: tooling built for transient work (a tracker with a prune step) is
-actively wrong for evergreen knowledge, whose failure mode is *staleness*, not clutter.
+The marker (`durable: true`), grouping (`topic:`), and index (`KNOWLEDGE.md`) shipped; see the
+key decision above and [`DESIGN-durable-knowledge-docs.md`](DESIGN-durable-knowledge-docs.md).
+Still deferred:
 
-Open design questions for a future effort:
-
-- **Which axis?** A third generated index (e.g. `KNOWLEDGE.md`), an extension of `feature:`
-  grouping, or a new `kind:`/`type:` frontmatter dimension? How does it relate to the existing
-  `status:` and `feature:` axes?
-- **Anti-pruning.** Today's guidance deletes `done` notes and the generator drops terminal
-  `status:` from all indexes. Durable docs must be *exempt* — they need a marker that keeps
-  them out of both the prune rule and terminal-status dropping.
-- **Agent context.** `ACTIVE.md` is imported into sessions; `FEATURES.md` is not. Durable
-  knowledge is prime agent-reference material — should some/all of it be imported, or exposed
-  via a curated index rather than full bodies (token-cost tradeoff)? This is the one real
-  behavioral departure from today's system.
-- **Derive vs. hand-write.** Mechanical facts (dependency maps, "what calls what") can be
-  *generated* from code so they never go stale; reserve prose for the "why", the contracts,
-  and rejected alternatives that no tool can derive.
-- **Authoring & freshness.** A convention/skill prompting the agent to draft or update a doc
-  when a subsystem is designed or a non-obvious fact is discovered — with a human-ratify gate
-  (agent proposes → human reviews → merge), and drift *detection* (flagging doc claims the
-  code contradicts) valued over autonomous authoring.
-- **Placement & identity.** `_workspace/` vs `<area>/`; relationship to `feature:` slugs; a
-  naming convention that signals "durable, not a checkpoint".
-
-Build it in this template repo so it flows to every instance via the `upstream` merge channel.
+- **Derive vs. hand-write.** Mechanical facts (dependency maps, "what calls what") could be
+  *generated* from code so they never go stale; reserve prose for the "why", contracts, and
+  rejected alternatives no tool can derive.
+- **Authoring & freshness.** A convention/skill prompting the agent to draft or update a durable
+  doc when a subsystem is designed or a non-obvious fact is found — with a human-ratify gate
+  (agent proposes → human reviews → merge) and drift *detection* (flagging doc claims the code
+  contradicts) valued over autonomous authoring.
 
 ## History
 

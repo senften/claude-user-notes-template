@@ -8,10 +8,11 @@ repo for a new project.
 
 Each note is a markdown file whose YAML frontmatter is the single source of truth. A
 PowerShell generator (`regen-active.ps1`, re-run by a `Stop` hook after every turn) rebuilds
-two indexes:
+these indexes:
 
 - `_workspace/ACTIVE.md` — in-flight efforts, one row per effort, driven by `status:`.
 - `_workspace/FEATURES.md` — notes grouped by `feature:`, for cross-cutting navigation.
+- `_workspace/KNOWLEDGE.md` — evergreen "how it works and why" docs, grouped by `topic:`.
 
 **Never hand-edit the generated files.** See `_workspace/claude-instructions.md` for the
 frontmatter conventions and status/feature routing.
