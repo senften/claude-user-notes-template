@@ -63,6 +63,19 @@ $r = Invoke-Gen $root
 Assert 'terminal non-durable absent from ACTIVE'    (-not ($r.Active -match 'Gone'))
 Assert 'terminal non-durable absent from KNOWLEDGE' (-not ($r.Knowledge -match 'gone.md'))
 
+# Scenario 5b: feature-only note with no status (FEATURES regression).
+$root = New-Root
+Add-Note $root 'Nav/comp.md' (Note "title: Nav Component`nfeature: nav-x`nupdated: 2026-07-17")
+$r = Invoke-Gen $root
+Assert 'feature-only in FEATURES'  ($r.Features -match 'nav-x' -and $r.Features -match 'comp.md')
+Assert 'feature-only not in ACTIVE' (-not ($r.Active -match 'Nav Component'))
+
+# Scenario 5c: topic without durable flag (regression: topic alone does not trigger KNOWLEDGE).
+$root = New-Root
+Add-Note $root 'Arch/sketch.md' (Note "title: Sketch`ntopic: solo`nstatus: in-progress`nupdated: 2026-07-16")
+$r = Invoke-Gen $root
+Assert 'topic-only not in KNOWLEDGE' (-not ($r.Knowledge -match 'sketch.md'))
+
 # Scenario 6: multi-topic durable note appears under each.
 $root = New-Root
 Add-Note $root 'Svc/multi.md' (Note "title: Multi`ndurable: true`ntopic: [alpha, beta]`nupdated: 2026-07-21")

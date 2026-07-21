@@ -1,19 +1,22 @@
-# Regenerates _workspace/ACTIVE.md and _workspace/FEATURES.md from per-note frontmatter.
-# Source of truth = each note's YAML frontmatter. The script finds its own root via
-# $PSScriptRoot, so it needs no per-clone edit; it runs on Windows PowerShell and, via
-# pwsh, on macOS/Linux.
+# Regenerates _workspace/ACTIVE.md, _workspace/FEATURES.md, and _workspace/KNOWLEDGE.md
+# from per-note frontmatter. Source of truth = each note's YAML frontmatter. The script
+# finds its own root via $PSScriptRoot, so it needs no per-clone edit; it runs on
+# Windows PowerShell and, via pwsh, on macOS/Linux.
 #
-# Two independent axes:
+# Three independent axes:
 #   status:  -> ACTIVE.md  (active-work tracker; one row per effort)
 #     done/archived/complete/completed -> dropped (terminal)
 #     otherwise routed to one of the ordered $sections buckets (see below);
 #     any non-terminal status not matched by a bucket falls to "Active work".
 #   feature: -> FEATURES.md (all notes of a feature, grouped by slug; navigation)
+#   durable: -> KNOWLEDGE.md (durable knowledge docs, grouped by topic:)
+#     true routes to KNOWLEDGE.md and is EXEMPT from terminal-status dropping.
 #
-# A note may carry either key, both, or neither. Terminal status drops a note from
-# BOTH indexes. A note with feature: but no status: appears only in FEATURES.md.
-# Only non-empty ACTIVE.md sections are emitted. No timestamp in output, so an index
-# changes only when the underlying frontmatter changes.
+# A note may carry any combination of these. Terminal status drops a note from
+# ACTIVE.md and FEATURES.md. A durable: true note must persist in KNOWLEDGE.md
+# regardless of status. A note with feature: but no status: appears only in
+# FEATURES.md. Only non-empty sections are emitted. No timestamp in output, so an
+# index changes only when the underlying frontmatter changes.
 $ErrorActionPreference = 'Stop'
 $root = $PSScriptRoot
 if (-not $root -or -not (Test-Path -LiteralPath $root)) { exit 0 }
