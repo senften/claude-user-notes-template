@@ -43,6 +43,18 @@ frontmatter is authoritative and the generator rebuilds the indexes on every tur
 are never stale and are never hand-edited. (Both generated files carry a "do not edit by hand"
 banner.)
 
+### The generated indexes are not tracked in git
+`ACTIVE.md`, `FEATURES.md`, and `KNOWLEDGE.md` are build artifacts — rebuilt from the tracked
+note frontmatter on every Stop hook — so they are `.gitignore`d, not committed. Tracking them
+was tried and reverted: because both the template and a downstream project regenerate different
+content, a `git pull upstream/main` into a mid-flow project conflicts on all three every time
+(mid-flow means the project's `ACTIVE.md` is necessarily populated). Untracking loses nothing:
+the durable *content* lives in the individual `durable: true` note files (ordinary tracked
+source), and every index is reproducible by running the generator. A fresh clone has no index
+until the first regen, which is harmless — `@ACTIVE.md` silently no-ops when absent. This is the
+generated-file corollary of "generate the index; don't hand-maintain it": a derived artifact
+belongs to the build, not to version control.
+
 ### Why not Obsidian tags
 Considered and rejected. A tag's main value is auto-aggregating members without a hand-kept
 index — which the generator already provides. Plain markdown links work in VSCode and Obsidian

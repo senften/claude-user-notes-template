@@ -3,3 +3,11 @@
 
 # macOS Finder metadata
 .DS_Store
+
+# Generated indexes — rebuilt from note frontmatter by regen-active.ps1 on every
+# Stop hook. Tracking them causes merge conflicts when pulling template updates into
+# a mid-flow project (both sides regenerate different content). They are always
+# reproducible from the tracked note files, so they don't belong in version control.
+_workspace/ACTIVE.md
+_workspace/FEATURES.md
+_workspace/KNOWLEDGE.md
