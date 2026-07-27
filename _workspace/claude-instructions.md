@@ -24,6 +24,18 @@ Quote any scalar value (e.g. a long `resume:` recap) that contains a colon-space
 editors/tools with a real YAML parser (e.g. VS Code's frontmatter preview) do, and
 will fail with a "nested mappings" error.
 
+Two further constraints on `resume:` (both silent — nothing errors, the row just
+comes out wrong):
+
+- **No backticks in the value.** The generated row wraps it in a code span
+  (``resume: `<value>` ``), so a backtick inside terminates that span early and the
+  rest of the recap renders as prose. Name branches and files bare.
+- **Keep it on ONE line — no folded/literal block scalars (`>` or `|`).** The
+  line-based parser reads `resume: >` as the scalar `">"` and then stops looking, so
+  every continuation line is dropped and `ACTIVE.md` shows an empty resume. Only
+  block *lists* (`- item`) are supported as multi-line values. A long recap belongs on
+  a single quoted line, however long.
+
 ## Three axes
 
 - **`status:` → `ACTIVE.md`** (one row per effort). Value is lowercased, matched exactly, and
