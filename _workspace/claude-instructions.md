@@ -18,6 +18,12 @@ keep the source honest by setting frontmatter on each note.
     topic: some-topic-slug     # optional; groups this note in KNOWLEDGE.md
     ---
 
+Quote any scalar value (e.g. a long `resume:` recap) that contains a colon-space
+(`:` + ` `) or starts with a YAML-special character — wrap it in `"..."`.
+`regen-active.ps1` uses a tolerant line-based parser that doesn't care, but
+editors/tools with a real YAML parser (e.g. VS Code's frontmatter preview) do, and
+will fail with a "nested mappings" error.
+
 ## Three axes
 
 - **`status:` → `ACTIVE.md`** (one row per effort). Value is lowercased, matched exactly, and
