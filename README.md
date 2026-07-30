@@ -46,6 +46,10 @@ Rule of thumb: **template changes → be in the template folder; notes → be in
 folder.** A project pushed to a remote is its own independent repository, never a branch of
 the template.
 
+For a single-solution personal project you may want the inverse — notes committed *inside*
+the code repo. See [Alternative: notes inside the solution's own
+repo](#alternative-notes-inside-the-solutions-own-repo).
+
 ## Instantiate a new project
 
 ```
@@ -117,9 +121,9 @@ CLAUDE.local.md
 ```
 
 (If the clone lands *inside* the project's tree, add its folder name to that same
-`.git/info/exclude` too, so the host project doesn't track it. Or, if you prefer the notes as
-a committed folder inside the project, skip the stub entirely and add
-`@_workspace/claude-instructions.md` to the project's `CLAUDE.md`.)
+`.git/info/exclude` too, so the host project doesn't track it. If instead you want the notes
+**committed** to the project's own repo, don't use a clone at all — see [Alternative: notes
+inside the solution's own repo](#alternative-notes-inside-the-solutions-own-repo).)
 
 **Project-specific conventions (optional overlay).** The base `claude-instructions.md` ends
 with an optional `@claude-instructions.local.md` import. Drop a
@@ -159,6 +163,84 @@ The hook config is per-machine — switch the command to match the OS:
 - macOS/Linux: `pwsh -NoProfile -File "<clone>/regen-active.ps1" 2>/dev/null || true`
 
 If the hook goes stale, open `/hooks` once (or restart) to reload it.
+
+## Alternative: notes inside the solution's own repo
+
+Everything above keeps notes *outside* the code repo — the primary use case, and what you
+want for a project spread across several solutions. For a **single-solution personal
+project** the opposite can be preferable: notes committed alongside the code, one repo, one
+clone, nothing to wire per machine.
+
+This mode is a **hand copy, not a clone.** You take the three load-bearing skeleton files and
+commit them into the solution. There is no `upstream` remote and no merge channel — see the
+tradeoff at the end.
+
+### 1. Copy the skeleton into a subdirectory
+
+```
+<solution>/notes/regen-active.ps1                   # verbatim from the template
+<solution>/notes/_workspace/claude-instructions.md  # verbatim
+<solution>/notes/.gitignore                         # verbatim
+```
+
+`git add` all three — here `notes/` is **tracked** by the solution repo. Only the generated
+indexes stay untracked, which the copied `.gitignore` already handles: its patterns resolve
+relative to its own directory, so it ignores `notes/_workspace/ACTIVE.md` and siblings with
+no edit and without touching the solution's root `.gitignore`.
+
+Skip `README.md` and `DESIGN.md` — they document the template, not your project.
+
+**Use a subdirectory; do not put `regen-active.ps1` at the solution root.** The generator
+scans `*.md` recursively from its own folder (`$PSScriptRoot`). Rooted at `notes/` it sees
+only notes. Rooted at the solution top it would walk `bin/`, `obj/`, `node_modules/` and
+adopt any frontmattered `.md` in the codebase as a note. The folder name is yours (`notes/`,
+`devlog/`, …) — only the nesting matters.
+
+### 2. Wire it up (two committed files, no per-machine setup)
+
+Add the import to the solution's own `CLAUDE.md`:
+
+```
+@notes/_workspace/claude-instructions.md
+```
+
+No `CLAUDE.local.md` stub and no counting relative hops — co-location removes the one
+position-sensitive piece of the default topology.
+
+Then commit the Stop hook in `<solution>/.claude/settings.json`, using `${CLAUDE_PROJECT_DIR}`
+instead of an absolute path:
+
+```json
+{
+  "hooks": {
+    "Stop": [
+      { "hooks": [ { "type": "command",
+        "command": "pwsh -NoProfile -File \"${CLAUDE_PROJECT_DIR}/notes/regen-active.ps1\"",
+        "statusMessage": "Regenerating notes ACTIVE.md", "async": true } ] }
+    ]
+  }
+}
+```
+
+Claude Code exports `CLAUDE_PROJECT_DIR` into every hook process, so one committed config
+works from any clone path on any machine. (On macOS/Linux append `2>/dev/null || true`.)
+
+Notes then live in `notes/_workspace/` and optional `notes/<area>/` subdirs. Frontmatter
+conventions, the three axes, and the generated indexes are all unchanged.
+
+### The tradeoff: no update channel
+
+`git fetch upstream && git merge upstream/main` depends on the notes repo descending from the
+template. A hand copy has no such ancestry, so **skeleton fixes don't flow in and improvements
+you make here don't flow back** — both directions are manual.
+
+That's a deliberate and cheap trade: the skeleton is two files. To refresh, re-copy
+`regen-active.ps1` and `_workspace/claude-instructions.md` from your template clone and diff.
+To backport a fix made here, hand-apply it in the template.
+
+`git subtree add --prefix=notes` would preserve a real merge channel, at the cost of pulling
+the template's history into the solution and landing future `subtree pull` conflicts in the
+solution's own log. For a personal project that noise outweighs a two-file copy.
 
 ## Directory layout
 
