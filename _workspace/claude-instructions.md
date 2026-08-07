@@ -33,13 +33,18 @@ directly under the note's title heading:
 
     Engineering is done; two commits in two repos remain, merge mechanics only.
 
-    <the rest of the recap — as many paragraphs, bullets and tables as it needs>
+    <the rest of the CURRENT picture — a few paragraphs or a small table, not an archive>
 
 - **The first line becomes the `ACTIVE.md` row.** Write it as ONE standalone sentence
   of current status: what state this effort is in and what happens next. It is
   truncated at 240 characters in the row, so put the load-bearing fact first.
 - **Rewrite it whenever you bump `updated:`.** Same edit, every time — a stale first
   line is a lying status board.
+- **Keep the whole section to CURRENT state, not history.** Roughly a screen is the
+  budget. This section is read first, every time the effort is picked up, so length here
+  is a tax on every future session — and unlike the old one-line frontmatter field,
+  nothing here makes growth uncomfortable. When the detail outgrows the budget it belongs
+  in the note's own sections *below* `## Resume`, not inside it.
 - **Everything below the first line is yours to shape.** It is ordinary body markdown:
   prune and restructure it. Do NOT append a changelog — if a paragraph is superseded,
   delete it rather than writing "the above is now retired".
