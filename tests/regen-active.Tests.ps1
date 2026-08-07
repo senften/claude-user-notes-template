@@ -30,6 +30,7 @@ function Assert($label, $cond) {
 }
 
 function Note($fm) { "---`n$fm`n---`n`nbody" }
+function NoteB($fm, $body) { "---`n$fm`n---`n`n$body" }
 
 # Scenario 1+2: durable watching note, then flipped to done.
 $root = New-Root
@@ -82,6 +83,57 @@ Add-Note $root 'Svc/multi.md' (Note "title: Multi`ndurable: true`ntopic: [alpha,
 $r = Invoke-Gen $root
 Assert 'multi-topic under alpha' ($r.Knowledge -match '## alpha')
 Assert 'multi-topic under beta'  ($r.Knowledge -match '## beta')
+
+# --- ACTIVE.md row text from the note body's `## Resume` section ---
+# The `no dash` assertions below scan the whole of ACTIVE.md for an em dash, and one of
+# the generator's own section headings is `# In Review — PR`. These fixtures use
+# `status: in-progress` so they route to the `# Active work` catch-all and the file stays
+# em-dash-free; retargeting one at a review status fails for reasons unrelated to the code.
+
+# Scenario 7: row text comes from the first line of ## Resume.
+$root = New-Root
+Add-Note $root '_workspace/r1.md' (NoteB "title: R1`nstatus: in-progress`nupdated: 2026-08-07" "# R1`n`n## Resume`n`nPR 6930 open, waiting on QA.`n`nMore detail further down.")
+$r = Invoke-Gen $root
+Assert 'resume first line renders in row'   ($r.Active -match 'PR 6930 open, waiting on QA\.')
+Assert 'later resume lines excluded'        (-not ($r.Active -match 'More detail further down'))
+Assert 'row renders as two lines'           ($r.Active -match '(?m)^  \[r1\.md\]\(\.\./_workspace/r1\.md\) — ')
+
+# Scenario 8: no ## Resume section -> doc link only, no separator.
+$root = New-Root
+Add-Note $root '_workspace/r2.md' (NoteB "title: R2`nstatus: in-progress`nupdated: 2026-08-07" "# R2`n`nJust prose, no resume section.")
+$r = Invoke-Gen $root
+Assert 'missing resume section still rows'  ($r.Active -match '\[r2\.md\]\(\.\./_workspace/r2\.md\)')
+Assert 'missing resume section: no dash'    (-not ($r.Active -match "—"))
+Assert 'body prose is not scavenged'        (-not ($r.Active -match 'Just prose'))
+
+# Scenario 8b: ## Resume present but empty (next heading follows) -> link only.
+$root = New-Root
+Add-Note $root '_workspace/r3.md' (NoteB "title: R3`nstatus: in-progress`nupdated: 2026-08-07" "# R3`n`n## Resume`n`n## Detail`n`nSome detail.")
+$r = Invoke-Gen $root
+Assert 'empty resume section: no dash'      (-not ($r.Active -match "—"))
+Assert 'empty resume section: no scavenge'  (-not ($r.Active -match 'Some detail'))
+
+# Scenario 9: an over-long single line is truncated at a word boundary with an ellipsis.
+$long = ('word ' * 100).Trim()
+$root = New-Root
+Add-Note $root '_workspace/r4.md' (NoteB "title: R4`nstatus: in-progress`nupdated: 2026-08-07" "# R4`n`n## Resume`n`n$long")
+$r = Invoke-Gen $root
+Assert 'long line truncated'                ($r.Active -match "…")
+Assert 'full long line absent'              (-not ($r.Active -match [regex]::Escape($long)))
+Assert 'truncated at a word boundary'       (-not ($r.Active -match "wor…"))
+
+# Scenario 10: legacy resume: frontmatter is ignored entirely.
+$root = New-Root
+Add-Note $root '_workspace/r5.md' (NoteB "title: R5`nstatus: in-progress`nupdated: 2026-08-07`nresume: LEGACYVALUE must not render" "# R5`n`nNo resume section here.")
+$r = Invoke-Gen $root
+Assert 'legacy resume: frontmatter ignored' (-not ($r.Active -match 'LEGACYVALUE'))
+Assert 'legacy note still gets a row'       ($r.Active -match 'R5')
+
+# Scenario 11: a bulleted first line renders without its list marker.
+$root = New-Root
+Add-Note $root '_workspace/r6.md' (NoteB "title: R6`nstatus: in-progress`nupdated: 2026-08-07" "# R6`n`n## Resume`n`n- Bulleted status line.")
+$r = Invoke-Gen $root
+Assert 'list marker stripped from row'      ($r.Active -match "— Bulleted status line\.")
 
 if ($fails -gt 0) { Write-Host "`n$fails failure(s)"; exit 1 }
 Write-Host "`nAll assertions passed"; exit 0
