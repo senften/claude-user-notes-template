@@ -12,29 +12,43 @@ keep the source honest by setting frontmatter on each note.
     status: in-progress        # any non-terminal value shows in ACTIVE.md
     areas: [optional-area]     # informational; shown in the indexes
     updated: YYYY-MM-DD
-    resume: branch or path to pick up from
     feature: some-feature-slug # optional; groups this note in FEATURES.md
     durable: true              # optional; evergreen doc, never pruned -> KNOWLEDGE.md
     topic: some-topic-slug     # optional; groups this note in KNOWLEDGE.md
     ---
 
-Quote any scalar value (e.g. a long `resume:` recap) that contains a colon-space
-(`:` + ` `) or starts with a YAML-special character — wrap it in `"..."`.
-`regen-active.ps1` uses a tolerant line-based parser that doesn't care, but
-editors/tools with a real YAML parser (e.g. VS Code's frontmatter preview) do, and
-will fail with a "nested mappings" error.
+Quote any scalar value that contains a colon-space (`:` + ` `) or starts with a
+YAML-special character — wrap it in `"..."`. `regen-active.ps1` uses a tolerant
+line-based parser that doesn't care, but editors/tools with a real YAML parser (e.g.
+VS Code's frontmatter preview) do, and will fail with a "nested mappings" error.
 
-Two further constraints on `resume:` (both silent — nothing errors, the row just
-comes out wrong):
+## The `## Resume` section
 
-- **No backticks in the value.** The generated row wraps it in a code span
-  (``resume: `<value>` ``), so a backtick inside terminates that span early and the
-  rest of the recap renders as prose. Name branches and files bare.
-- **Keep it on ONE line — no folded/literal block scalars (`>` or `|`).** The
-  line-based parser reads `resume: >` as the scalar `">"` and then stops looking, so
-  every continuation line is dropped and `ACTIVE.md` shows an empty resume. Only
-  block *lists* (`- item`) are supported as multi-line values. A long recap belongs on
-  a single quoted line, however long.
+The recap lives in the note **body**, not in frontmatter — a `## Resume` section
+directly under the note's title heading:
+
+    # MWL gauge-restart on redefine
+
+    ## Resume
+
+    Engineering is done; two commits in two repos remain, merge mechanics only.
+
+    <the rest of the recap — as many paragraphs, bullets and tables as it needs>
+
+- **The first line becomes the `ACTIVE.md` row.** Write it as ONE standalone sentence
+  of current status: what state this effort is in and what happens next. It is
+  truncated at 240 characters in the row, so put the load-bearing fact first.
+- **Rewrite it whenever you bump `updated:`.** Same edit, every time — a stale first
+  line is a lying status board.
+- **Everything below the first line is yours to shape.** It is ordinary body markdown:
+  prune and restructure it. Do NOT append a changelog — if a paragraph is superseded,
+  delete it rather than writing "the above is now retired".
+- The heading must be exactly `## Resume`. The generator matches it literally; if it is
+  missing or the section is empty the row renders as the doc link alone, with no text.
+
+**Resuming an effort.** When asked to resume a named effort, match the title in
+`ACTIVE.md`, open the linked note, and read `## Resume` FIRST. It supersedes anything
+below it — prose further down may have been overtaken and is not authoritative.
 
 ## Three axes
 
