@@ -86,6 +86,20 @@ proceed) vs **On Hiatus** (chose to pause); **Watching** (work done, watching fo
 (neither active nor safe to delete) until sign-off; only non-empty sections render, so unused
 stages add no noise.
 
+### The resume recap lives in the note body; the row is derived from it
+`ACTIVE.md`'s row text is the first line of the note's `## Resume` section, not a `resume:`
+frontmatter value. Three problems forced the move. A YAML scalar can only be *appended* to, so
+recaps grew into changelogs ("the old framing is RETIRED, do not reason from it") instead of
+current state — one reached 20 KB. `ACTIVE.md` is `@`-imported into every session, so the full
+recap of every *Watching / Hiatus / Future* effort was injected on every session, while the actual
+workflow ("let's resume &lt;title&gt;") needs exactly one. And the recap existed in two places —
+the field and the body — with only the field in the update habit, so bodies went stale and an
+agent reading the body first reasoned from a superseded picture. Body markdown can be pruned and
+restructured; deriving the row from its first line makes board-versus-recap disagreement
+structurally impossible and removes the one thing an author would otherwise have to remember to
+update twice. A 240-character cap stops an un-restructured recap re-flooding the row, which is
+also what lets the transition ship with no migration code (see `MIGRATION.md`).
+
 ### Robust-enough frontmatter parsing
 The parser is line-based (not a full YAML parser) but handles scalars, inline arrays
 (`key: [a, b]`), and multi-line block lists. That last case matters because Obsidian's Properties
@@ -138,6 +152,21 @@ load). Generic stays mergeable; local stays conflict-free.
   is historically painful on Windows. Rejected in favor of reusing the tested PowerShell script.
 - **Two native scripts (pwsh + bash/POSIX-sh).** No runtime install off-Windows, but two
   implementations that must stay byte-for-byte in sync. Rejected for the drift cost.
+- **A short `summary:` frontmatter field beside the long recap.** The obvious shape, and it needs
+  no body parsing — but it must be rewritten every checkpoint or it drifts from the recap, and
+  drift is this system's demonstrated failure mode, not a hypothetical one. Rejected for deriving
+  the row from the recap itself.
+- **Two generated indexes: a scannable `ACTIVE.md` plus a full `RESUME.md`, both imported.** Gives
+  a clean board and still costs the agent no extra read, but it holds every effort's recap in
+  context to save one file read of the single effort being resumed, and it preserves the
+  duplication that causes drift. Rejected.
+- **Rendering the full recap only for the "hot" sections** (Active work, In Review, Blocked), with
+  a short line for the rest. The smallest possible change, but the rows read most often stay the
+  fattest ones. Rejected.
+- **A truncating legacy fallback in the generator** (no `## Resume` → derive the row from a
+  leftover `resume:`). Permanent machinery for a one-time migration; the 240-character cap already
+  renders a readable row from a pasted-but-untidied recap. Rejected in favour of a documented
+  manual pass.
 
 ## Future work
 
@@ -159,3 +188,7 @@ Still deferred:
 
 Distilled from the original KAutomate-specific implementation this template was extracted from;
 that project's dated design/plan notes live in its own git history.
+
+**2026-08-07** — the `resume:` frontmatter field was replaced by a body-owned `## Resume` section
+whose first line is rendered into `ACTIVE.md`. See the key decision above, and `MIGRATION.md` for
+the per-project migration.
