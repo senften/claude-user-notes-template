@@ -70,6 +70,10 @@ git fetch upstream && git merge upstream/main
 The template has zero note files, so the merge only touches skeleton paths and leaves your
 notes alone. A conflict arises only on a skeleton file you customized locally.
 
+If a skeleton change also changes what notes are expected to *contain*, the post-merge steps are
+in [`MIGRATION.md`](MIGRATION.md), newest first. Merging never rewrites your notes, so a
+convention change shows up as a degraded index until you migrate.
+
 ## Improve the template
 
 Edit **in the template repo**, or backport a skeleton change discovered in a project via
