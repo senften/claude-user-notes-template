@@ -21,7 +21,13 @@ pruned and restructured, and deriving the row from it means board and recap cann
 title, areas, status, date and the doc link, with no recap text. Nothing is lost — the field is
 still in the note file. Rows come back as you migrate each note.
 
-### Migrate with Claude (recommended)
+**Two paths, with different rules.** A *bulk pass* over notes you are not currently working is
+deliberately mechanical — move the value, write a status line, change nothing else — because you do
+not hold those efforts in your head and guessing is worse than leaving them alone. Migrating a note
+you are *actively working* is the opposite: you already have the context, so restructure the recap
+properly. Both are below; most repos use both.
+
+### Bulk pass, with Claude (recommended)
 
 Start a session in your notes repo and paste:
 
@@ -48,7 +54,7 @@ Start a session in your notes repo and paste:
 Then run the generator (or end the turn and let the Stop hook do it) and read
 `_workspace/ACTIVE.md` to check the rows.
 
-### Migrate by hand
+### Bulk pass, by hand
 
 For each note with a `resume:` field:
 
@@ -63,6 +69,16 @@ For each note with a `resume:` field:
    as an ambiguous sibling of the note's existing `##` sections.
 6. Unquote as you go. The old field needed a single quoted line with no backticks; body text has
    neither restriction, so break it into paragraphs and use inline code freely.
+
+### Migrating a note you're actively working
+
+Do the opposite of the bulk pass: restructure it. You have the effort in context, which is exactly
+what the bulk pass lacks, so this is the moment to split the wall of text into sections, turn the
+repo/branch inventory into a table, delete what is superseded, and drop the `*Superseded by the
+Resume above…*` prose entirely rather than parking it. **The bulk pass's "do not prune or rewrite"
+rule does not apply here** — it exists only to stop a context-free pass from destroying meaning.
+Restructuring is the outcome the whole change was for; the bulk pass is just how notes you are not
+touching get a usable row in the meantime.
 
 ### Notes
 
