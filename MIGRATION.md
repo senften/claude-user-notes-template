@@ -26,13 +26,24 @@ still in the note file. Rows come back as you migrate each note.
 Start a session in your notes repo and paste:
 
 > Migrate every note in this repo to body-owned resume recaps. For each note that has a `resume:`
-> frontmatter field: delete that field, and insert a `## Resume` section directly under the note's
-> title heading whose content is the field's value verbatim. Then rewrite only the FIRST line of
-> that new section as one standalone sentence of current status — what state the effort is in and
-> what happens next — leaving the rest of the pasted value untouched below it. If the note already
-> has body prose the recap supersedes, do NOT try to merge them: add a `## Historical` heading
-> above that prose and leave it in place. Do not change any other frontmatter key, and do not
-> prune or rewrite recap content beyond that first line. List every file you changed when done.
+> frontmatter field:
+>
+> 1. Delete the `resume:` field, and insert a `## Resume` section directly under the note's title
+>    heading — or directly under the frontmatter if the note has no title heading.
+> 2. That section's content is: a NEW first line that is one standalone sentence of current status
+>    (what state the effort is in and what happens next), then a blank line, then the deleted
+>    field's value pasted verbatim. The value is a SINGLE physical line however long it is — that
+>    is expected; do not reflow it, re-wrap it, or split it into paragraphs.
+> 3. If your new first line fully restates the pasted value's own opening sentence, delete just
+>    that opening sentence. Otherwise leave the pasted value completely untouched.
+> 4. If the note already has body prose that the recap supersedes, do NOT merge them. Insert the
+>    single line `*Superseded by the Resume above; kept for history.*` immediately above that
+>    prose and leave the prose itself alone. Use that italic line and NOT a heading: a
+>    `## Historical` heading lands as a sibling of the body's own `##` sections, so a reader
+>    cannot tell whether it covers the next section or everything to the end of the file.
+>
+> Do not change any other frontmatter key, and do not prune or rewrite recap content beyond step 3.
+> Report every file you changed, and for each one say whether you applied step 3.
 
 Then run the generator (or end the turn and let the Stop hook do it) and read
 `_workspace/ACTIVE.md` to check the rows.
@@ -42,10 +53,15 @@ Then run the generator (or end the turn and let the Stop hook do it) and read
 For each note with a `resume:` field:
 
 1. Cut the value of `resume:`, then delete the key.
-2. Add `## Resume` directly under the note's `#` title and paste the value beneath it.
-3. Rewrite the first line as a one-sentence status. Everything else can stay as it is.
-4. If body prose below is superseded by the recap, put a `## Historical` heading above it.
-5. Unquote as you go. The old field needed a single quoted line with no backticks; body text has
+2. Add `## Resume` directly under the note's `#` title.
+3. Write your one-sentence status line, then a blank line, then paste the value. The value arrives
+   as one enormously long physical line — that is what it always was; leave it that way.
+4. If your status line already says what the pasted value's opening sentence said, drop that
+   sentence. Otherwise change nothing in the value.
+5. If body prose below is superseded by the recap, put the italic line
+   `*Superseded by the Resume above; kept for history.*` above it — not a heading, which would sit
+   as an ambiguous sibling of the note's existing `##` sections.
+6. Unquote as you go. The old field needed a single quoted line with no backticks; body text has
    neither restriction, so break it into paragraphs and use inline code freely.
 
 ### Notes
@@ -54,8 +70,12 @@ For each note with a `resume:` field:
 - Nothing needs re-wiring. The generated indexes are `.gitignore`d and rebuilt from scratch on the
   next Stop hook, so there are no index conflicts on the merge and no stale output.
 - Don't reconcile a pasted recap against the stale prose below it during migration; that is
-  per-effort judgment. `## Historical` means nothing to the generator — it is a marker for you, so
-  the pruning can happen the next time you actually work that effort.
+  per-effort judgment. The `*Superseded by the Resume above…*` line means nothing to the generator —
+  it is a marker for you, so the pruning can happen the next time you work that effort.
+- Expect two things to look wrong immediately after migrating and to be correct anyway: the recap is
+  now a single unbroken wall of text at the top of the note, and any fact stated in both the recap
+  and the superseded prose below now appears twice. Both are the deliberate cost of not doing
+  per-effort judgment during a mechanical pass. Prune them when you next work that effort.
 
 ## 2026-07-22 — the generated indexes became untracked
 
