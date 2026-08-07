@@ -56,3 +56,32 @@ For each note with a `resume:` field:
 - Don't reconcile a pasted recap against the stale prose below it during migration; that is
   per-effort judgment. `## Historical` means nothing to the generator — it is a marker for you, so
   the pruning can happen the next time you actually work that effort.
+
+## 2026-07-22 — the generated indexes became untracked
+
+Applies to any project clone created **before 2026-07-22**. Check first — if this prints nothing
+you are already fine and there is nothing to do:
+
+```
+git ls-files _workspace/ACTIVE.md _workspace/FEATURES.md _workspace/KNOWLEDGE.md
+```
+
+**What changed.** `ACTIVE.md`, `FEATURES.md` and `KNOWLEDGE.md` are build artifacts, rebuilt from
+note frontmatter on every Stop hook, so the template stopped tracking them and added them to
+`.gitignore`.
+
+**Why the merge alone doesn't fix it.** `.gitignore` has no effect on files git *already* tracks.
+The merge hands you the ignore rule, but your three indexes stay tracked — so they show as modified
+after every regen, and every subsequent `git merge upstream/main` conflicts on all three, because
+your clone and the template each regenerated different content from different notes.
+
+**Fix.** `--cached` untracks them without deleting anything from disk:
+
+```
+git rm --cached _workspace/ACTIVE.md _workspace/FEATURES.md _workspace/KNOWLEDGE.md
+git commit -m "chore: stop tracking generated indexes"
+```
+
+If you are mid-merge with conflicts on those three files, resolve them any way at all — the content
+is discarded — then run the above and re-run the generator. See *The generated indexes are not
+tracked in git* in [`DESIGN.md`](DESIGN.md) for the reasoning.
