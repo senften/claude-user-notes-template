@@ -4,6 +4,13 @@ Steps to run in a **project's notes repo** after `git fetch upstream && git merg
 brings a skeleton change that existing notes don't match. Newest first. If your notes already
 follow the current conventions there is nothing to do.
 
+**If your notes live inside the solution's own repo** (the hand-copy mode in
+[`README.md`](README.md#alternative-notes-inside-the-solutions-own-repo)), everything below still
+applies with two substitutions: prefix every path with your notes subdirectory
+(`notes/_workspace/ACTIVE.md`, not `_workspace/ACTIVE.md`), and read "your notes repo" as the
+solution repo. That mode has no merge channel, so nothing here arrives on its own — check this file
+in your template clone whenever you re-copy the skeleton.
+
 ## 2026-08-07 — the resume recap moved into the note body
 
 **What changed.** The `resume:` frontmatter field is gone. The recap now lives in the note body

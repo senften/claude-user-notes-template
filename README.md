@@ -192,7 +192,10 @@ indexes stay untracked, which the copied `.gitignore` already handles: its patte
 relative to its own directory, so it ignores `notes/_workspace/ACTIVE.md` and siblings with
 no edit and without touching the solution's root `.gitignore`.
 
-Skip `README.md` and `DESIGN.md` — they document the template, not your project.
+Skip `README.md`, `DESIGN.md` and `MIGRATION.md` — they document the template, not your project.
+Do keep the template clone around to read `MIGRATION.md` from, though: it is the only record of
+skeleton changes that also require editing your existing notes, and this mode has no merge channel
+to deliver them (see the tradeoff at the end).
 
 **Use a subdirectory; do not put `regen-active.ps1` at the solution root.** The generator
 scans `*.md` recursively from its own folder (`$PSScriptRoot`). Rooted at `notes/` it sees
@@ -241,6 +244,13 @@ you make here don't flow back** — both directions are manual.
 That's a deliberate and cheap trade: the skeleton is two files. To refresh, re-copy
 `regen-active.ps1` and `_workspace/claude-instructions.md` from your template clone and diff.
 To backport a fix made here, hand-apply it in the template.
+
+**Read [`MIGRATION.md`](MIGRATION.md) in the template clone before you refresh, not after.** A
+skeleton change can also change what notes are expected to *contain* — the generator and the
+instructions arrive in the copy, but your existing notes don't update themselves, and the symptom
+is a silently degraded `ACTIVE.md` rather than an error. Prefix every path in `MIGRATION.md` with
+your notes subdirectory (`notes/_workspace/…`, not `_workspace/…`), and read "your notes repo" as
+"the solution repo".
 
 `git subtree add --prefix=notes` would preserve a real merge channel, at the cost of pulling
 the template's history into the solution and landing future `subtree pull` conflicts in the
