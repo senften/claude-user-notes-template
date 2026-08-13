@@ -168,6 +168,21 @@ The hook config is per-machine — switch the command to match the OS:
 
 If the hook goes stale, open `/hooks` once (or restart) to reload it.
 
+### 3. If you use git worktrees
+
+Both wiring files above are untracked, and a worktree shares tracked content and nothing
+else — so a worktree gets **neither**: no notes instructions and no Stop hook. Nothing
+errors; the session looks normal and silently isn't indexing. Copy both into the new tree:
+
+- `.claude/settings.local.json` — copies **verbatim**; the hook's path to the generator is
+  absolute.
+- `CLAUDE.local.md` — the `@import` is relative to the stub's own location, so **recount the
+  hops** from the worktree's path. A tree at `work/.worktrees/proj/feat-x/` is a different
+  depth than `work/proj/`.
+
+(`.git/info/exclude` lives in the shared git dir, so both stay untracked in the worktree
+with no extra step.)
+
 ## Alternative: notes inside the solution's own repo
 
 Everything above keeps notes *outside* the code repo — the primary use case, and what you

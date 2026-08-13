@@ -167,6 +167,15 @@ load). Generic stays mergeable; local stays conflict-free.
   leftover `resume:`). Permanent machinery for a one-time migration; the 240-character cap already
   renders a readable row from a pasted-but-untidied recap. Rejected in favour of a documented
   manual pass.
+- **Canonical personal config in the notes repo, linked into each working tree.** A worktree gets
+  no untracked files, so the `CLAUDE.local.md` stub and the Stop hook are absent in every worktree
+  and fresh clone — silently. Keeping them in the notes repo and junctioning them in would buy
+  version history and one copy instead of per-tree drift, but it costs a step at worktree creation,
+  which is the same step whose omission is the actual failure. Worktree placement is also arbitrary
+  and personal (`.worktrees/<project>/` beside the repos is as valid as a sibling directory), so no
+  discovery- or ancestor-based scheme can be relied on either. Rejected: a hand copy costs that same
+  one step and no machinery, and this is a single-user sidecar where "no backup, no history" is
+  already the accepted trade. The copy step is documented in `README.md`.
 
 ## Future work
 
@@ -183,41 +192,6 @@ Still deferred:
   doc when a subsystem is designed or a non-obvious fact is found — with a human-ratify gate
   (agent proposes → human reviews → merge) and drift *detection* (flagging doc claims the code
   contradicts) valued over autonomous authoring.
-
-### A home for personal-but-project-scoped agent config
-
-Claude config sorts into three tiers, and only two of them survive a `git worktree`:
-
-| tier | lives in | travels? |
-|---|---|---|
-| shared + project | `CLAUDE.md`, tracked | yes — every worktree and clone |
-| personal + global | `~/.claude/` | yes — it is outside the repo |
-| **personal + project** | `.claude/`, **gitignored** | **no — nowhere** |
-
-A worktree shares *tracked content and nothing else*, so the third tier is absent in every
-worktree by construction — and in every fresh clone. It is also backed up by nothing and has no
-history, so a hook or setting that took real effort to get right is one `worktree remove` away
-from gone. Raising it to the global tier is the wrong fix: project-specific hooks then fire in
-unrelated repos.
-
-The notes repo is already the right *shape* for that tier — parallel to the code, versioned,
-project-scoped, never shipped. Candidate: keep the canonical personal project config in the notes
-repo and link it into each working tree. That buys version history and one copy instead of
-per-tree drift; it costs a step at worktree creation.
-
-Open questions before this is a decision:
-
-- **Link or copy.** A Windows junction (`mklink /J`) needs no admin, unlike a symlink; a copy
-  needs no privileges at all but reintroduces the drift the change is meant to remove.
-- **Scope split.** Some of what sits in `.claude/settings.json` is genuinely *shared* and would be
-  better un-ignored and committed to the code repo, leaving only the personal remainder for this
-  mechanism. Worth separating before choosing a home for the whole directory.
-- **Whether executable config belongs here at all.** Hooks run commands; a notes repo that has so
-  far held only prose would start carrying things that execute, which changes what reviewing a
-  notes PR means.
-
-Encountered on Orchid, 2026-08-11: a `Stop` hook was assumed missing in a worktree, which turned
-out to be a false alarm — but the mechanism is real and the near-miss is what surfaced the gap.
 
 ## History
 
