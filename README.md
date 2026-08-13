@@ -136,6 +136,11 @@ with an optional `@claude-instructions.local.md` import. Drop a
 silently skipped (a missing `@import` doesn't error). Keep it *additive*: never edit the
 generic file locally, so `git merge upstream/main` stays conflict-free.
 
+**Put conventions in the overlay, never in the stub above.** The overlay is tracked in your
+notes repo — versioned, one copy, travels with the clone. `CLAUDE.local.md` is untracked,
+per-machine, and absent from every worktree, so content parked there has no history and drifts
+per copy. The stub carries the `@import` and nothing else.
+
 ### 2. The `Stop` hook
 
 Prefer a **project-scoped** hook: put it in your launch directory's

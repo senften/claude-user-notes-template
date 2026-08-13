@@ -133,6 +133,12 @@ specifics and it loads right before `@ACTIVE.md`; a bare template instance omits
 import is silently skipped (verified: a missing `@import` doesn't error and later imports still
 load). Generic stays mergeable; local stays conflict-free.
 
+That overlay belongs in the notes clone, *not* in the consuming project's `CLAUDE.local.md` stub —
+either would keep the skeleton unforked, so mergeability doesn't decide it. Durability does: the
+overlay is tracked in the notes repo (versioned, one copy, travels with the clone), while the stub
+is untracked, per-machine, and absent from every worktree and fresh clone. The stub carries
+*wiring* and stays one line; authored *content* goes in the overlay.
+
 ## Rejected alternatives (for the record)
 
 - **Inline "related docs" links in each doc.** True one-click sibling navigation, but the
