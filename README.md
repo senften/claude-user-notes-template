@@ -56,8 +56,14 @@ repo](#alternative-notes-inside-the-solutions-own-repo).
 git clone <template> myproject-notes
 cd myproject-notes
 git remote rename origin upstream     # upstream = template (pull-only source of fixes)
+git remote set-url --push upstream DISABLED-pull-only
 # optionally: git remote add origin <the project's own remote>
 ```
+
+The `set-url --push` line makes pull-only enforced, not just a convention: fetch still uses the
+template URL, but any push to `upstream` fails on the bogus URL instead of publishing your notes
+to the template. It matters because the rename carries `main`'s tracking along: after the clone,
+`main` tracks `upstream/main`, so a bare `git push` would otherwise go straight to the template.
 
 Then do the per-machine wiring below.
 

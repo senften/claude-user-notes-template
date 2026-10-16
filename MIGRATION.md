@@ -11,6 +11,33 @@ applies with two substitutions: prefix every path with your notes subdirectory
 solution repo. That mode has no merge channel, so nothing here arrives on its own — check this file
 in your template clone whenever you re-copy the skeleton.
 
+## 2026-10-16 — the `upstream` remote became push-disabled
+
+Applies to any project clone created **before 2026-10-16**. Check first — if this prints
+`DISABLED-pull-only` you are already fine and there is nothing to do:
+
+```
+git remote get-url --push upstream
+```
+
+**What changed.** The setup steps in [`README.md`](README.md#instantiate-a-new-project) now
+disable pushing to `upstream`, so the template's "pull-only" rule is enforced rather than a
+convention.
+
+**Why the merge alone doesn't fix it.** Remotes live in your clone's `.git/config`, not in any
+tracked file, so no merge can change them. Older clones still have a pushable `upstream` — and
+because `git remote rename origin upstream` keeps `main` tracking `upstream/main`, a bare
+`git push` from such a clone publishes your notes to the template.
+
+**Fix.** Fetch keeps using the template URL; only pushes are redirected to a bogus one that fails:
+
+```
+git remote set-url --push upstream DISABLED-pull-only
+```
+
+If you have since added your own `origin`, also point `main` at it so a bare `git push` goes there:
+`git push -u origin main`.
+
 ## 2026-08-07 — the resume recap moved into the note body
 
 **What changed.** The `resume:` frontmatter field is gone. The recap now lives in the note body
